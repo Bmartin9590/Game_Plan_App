@@ -1,19 +1,17 @@
 // src/App.js
-import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import AuthPage from "./pages/AuthPage";
 import Dashboard from "./pages/Dashboard";
+import PlayEditor from "./pages/PlayEditor";
+import AuthPage from "./pages/AuthPage";
 
-/**
- * Main App:
- * Handles routing between AuthPage (login/signup) and Dashboard (after login).
- */
 function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<AuthPage />} />
+        <Route path="/" element={<Dashboard />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/editor/:id" element={<PlayEditor />} />
+        <Route path="/auth" element={<AuthPage />} />
       </Routes>
     </Router>
   );

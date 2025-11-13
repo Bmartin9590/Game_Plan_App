@@ -1,29 +1,21 @@
-// src/index.js
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
-import prisma from "./prismaClient.js";
 import authRoutes from "./routes/authRoutes.js";
-import playRoutes from "./routes/playRoutes.js";
+import shareRoutes from "./routes/shareRoutes.js";
 
-dotenv.config();
 const app = express();
-
 app.use(cors());
 app.use(express.json());
 
-// mount routes
-app.use("/api/auth", authRoutes);
-app.use("/api/plays", playRoutes);
+// TEMP auth middleware for testing
+app.use((req, res, next) => {
+  req.user = { id: 1 }; // replace with JWT middleware later
+  next();
+});
 
-app.get("/api/health", (req, res) => res.json({ status: "ok" }));
+// Routes
+app.use("/api/auth", authRoutes);
+app.use("/api/plays", shareRoutes);
 
 const PORT = process.env.PORT || 5001;
-app.listen(PORT, async () => {
-  try {
-    await prisma.$connect();
-    console.log(`🚀 Server running on port ${PORT}`);
-  } catch (err) {
-    console.error("Prisma connect error:", err);
-  }
-});
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
