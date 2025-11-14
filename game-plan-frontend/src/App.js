@@ -1,19 +1,36 @@
-// src/App.js
+import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Dashboard from "./pages/Dashboard";
-import PlayEditor from "./pages/PlayEditor";
-import AuthPage from "./pages/AuthPage";
+
+// Auth context provider
+import { AuthProvider } from "./context/AuthContext";
+
+// Pages
+import AuthPage from "./pages/AuthPage";       // Combined Login + Signup page
+import Dashboard from "./pages/Dashboard";     // Main dashboard (protected route)
+
+// Components
+import ProtectedRoute from "./components/ProtectedRoute"; // Protect dashboard route
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/editor/:id" element={<PlayEditor />} />
-        <Route path="/auth" element={<AuthPage />} />
-      </Routes>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Routes>
+          {/* Public route: Login / Signup */}
+          <Route path="/" element={<AuthPage />} />
+
+          {/* Protected route: Must be logged in */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
 
