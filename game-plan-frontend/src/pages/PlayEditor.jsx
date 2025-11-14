@@ -1,80 +1,66 @@
 // src/pages/PlayEditor.jsx
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Stage, Layer, Circle, Line, Text } from "react-konva";
-import { useParams } from "react-router-dom";
-import axios from "axios";
+import { useParams, useNavigate } from "react-router-dom";
+import { savePlay, getPlayById, updatePlay } from "../services/playService";
 
 /**
  * PlayEditor:
- * Fully interactive visual play editor using react-konva.
- * Features:
- * - Draggable player icons
- * - Draw routes with mouse
- * - Save play via API
+ * Allows creating or editing a football play.
+ * Supports dragging players and drawing routes.
+ * Redirects to Dashboard after saving.
  */
-
-export default function PlayEditor() {
-  const { id } = useParams(); // Play ID from URL (if editing an existing play)
+const PlayEditor = () => {
+  const { id } = useParams(); // Play ID if editing
+  const navigate = useNavigate(); // For redirecting
   const [playName, setPlayName] = useState("");
   const [players, setPlayers] = useState([]);
   const [routes, setRoutes] = useState([]);
   const [drawingRoute, setDrawingRoute] = useState([]);
-  const [loading, setLoading] = useState(true);
 
-  const token = localStorage.getItem("token");
-  const API_BASE = "http://localhost:5001/api/plays";
-
-  // Load play from backend if editing
+  // Load play if editing
   useEffect(() => {
-    const fetchPlay = async () => {
-      if (!id) {
-        // New play default setup
-        setPlayers([
-          { id: 1, x: 100, y: 300, type: "offense", number: 1 },
-          { id: 2, x: 200, y: 300, type: "offense", number: 2 },
-          { id: 3, x: 300, y: 300, type: "offense", number: 3 },
-          { id: 4, x: 500, y: 200, type: "defense", number: "D" },
-          { id: 5, x: 600, y: 200, type: "defense", number: "D" },
-        ]);
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const res = await axios.get(`${API_BASE}/${id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = res.data;
-        setPlayName(data.name);
-        setPlayers(data.players || []);
-        setRoutes(data.routes || []);
-      } catch (err) {
-        console.error(err);
-        alert("Failed to load play.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPlay();
-  }, [id, token]);
+    if (id) {
+      const fetchPlay = async () => {
+        try {
+          const data = await getPlayById(id);
+          setPlayName(data.name);
+          setPlayers(data.players || []);
+          setRoutes(data.routes || []);
+        } catch (error) {
+          console.error("Error loading play:", error);
+        }
+      };
+      fetchPlay();
+    } else {
+      // default setup for new play
+      setPlayers([
+        { id: 1, x: 100, y: 300, type: "offense", number: 1 },
+        { id: 2, x: 200, y: 300, type: "offense", number: 2 },
+        { id: 3, x: 300, y: 300, type: "offense", number: 3 },
+        { id: 4, x: 500, y: 200, type: "defense", number: "D" },
+        { id: 5, x: 600, y: 200, type: "defense", number: "D" },
+      ]);
+    }
+  }, [id]);
 
   // Update player position after drag
   const handleDragEnd = (e, playerId) => {
-    const updated = players.map((p) =>
-      p.id === playerId ? { ...p, x: e.target.x(), y: e.target.y() } : p
+    setPlayers(
+      players.map((p) =>
+        p.id === playerId ? { ...p, x: e.target.x(), y: e.target.y() } : p
+      )
     );
-    setPlayers(updated);
   };
 
-  // Begin drawing a route
+  // Start drawing a route
   const handleStageMouseDown = (e) => {
     const stage = e.target.getStage();
     const pos = stage.getPointerPosition();
     setDrawingRoute([pos.x, pos.y]);
   };
 
-  // Continue drawing while dragging
+  // Continue drawing route
   const handleStageMouseMove = (e) => {
     if (drawingRoute.length === 0) return;
     const stage = e.target.getStage();
@@ -82,7 +68,7 @@ export default function PlayEditor() {
     setDrawingRoute([...drawingRoute, pos.x, pos.y]);
   };
 
-  // Finish route
+  // Finish route drawing
   const handleStageMouseUp = () => {
     if (drawingRoute.length > 0) {
       setRoutes([...routes, drawingRoute]);
@@ -92,65 +78,71 @@ export default function PlayEditor() {
 
   // Save play to backend
   const handleSavePlay = async () => {
-    if (!playName) return alert("Please enter a play name.");
+    if (!playName) {
+      alert("Please enter a play name");
+      return;
+    }
 
     const playData = { name: playName, players, routes };
+
     try {
       if (id) {
-        await axios.put(`${API_BASE}/${id}`, playData, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        alert(`Play "${playName}" updated!`);
+        // UPDATE existing play
+        await updatePlay(id, playData);
+        alert(`Play "${playName}" updated successfully!`);
       } else {
-        const res = await axios.post(API_BASE, playData, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        alert(`Play saved! ID: ${res.data.id}`);
+        // CREATE new play
+        await savePlay(playData);
+        alert(`Play "${playName}" saved successfully!`);
       }
-    } catch (err) {
-      console.error(err);
-      alert("Error saving play.");
+      navigate("/"); // Redirect back to Dashboard after save
+    } catch (error) {
+      alert("Error saving play");
+      console.error(error);
     }
   };
 
-  if (loading) return <p className="text-white p-8">Loading play...</p>;
-
   return (
-    <div className="min-h-screen p-8 bg-gray-900 text-white flex flex-col items-center">
+    <div className="flex flex-col items-center mt-4">
       {/* Toolbar */}
-      <div className="mb-4 flex flex-wrap gap-2">
+      <div className="play-toolbar mb-2 flex flex-wrap gap-2">
         <input
           type="text"
           placeholder="Play Name"
           value={playName}
           onChange={(e) => setPlayName(e.target.value)}
-          className="px-2 py-1 rounded border border-white/30 bg-white/10 text-white"
+          className="px-2 py-1 border rounded"
         />
         <button
+          className="px-3 py-1 bg-blue-600 text-white rounded"
           onClick={handleSavePlay}
-          className="px-3 py-1 bg-blue-600 rounded hover:bg-blue-700"
         >
           Save Play
         </button>
         <button
+          className="px-3 py-1 bg-gray-300 rounded"
           onClick={() => setRoutes([])}
-          className="px-3 py-1 bg-gray-500 rounded hover:bg-gray-600"
         >
           Clear Routes
         </button>
+        <button
+          className="px-3 py-1 bg-gray-400 text-white rounded"
+          onClick={() => navigate("/")}
+        >
+          ← Back to Dashboard
+        </button>
       </div>
 
-      {/* Play field */}
+      {/* Konva stage */}
       <Stage
         width={800}
         height={500}
+        className="play-field"
         onMouseDown={handleStageMouseDown}
         onMouseMove={handleStageMouseMove}
         onMouseUp={handleStageMouseUp}
-        className="border border-white/20 bg-green-800 rounded-lg"
       >
         <Layer>
-          {/* Players */}
           {players.map((player) => (
             <React.Fragment key={player.id}>
               <Circle
@@ -167,11 +159,11 @@ export default function PlayEditor() {
                 text={player.number.toString()}
                 fontSize={14}
                 fill="white"
+                fontStyle="bold"
               />
             </React.Fragment>
           ))}
 
-          {/* Existing routes */}
           {routes.map((route, idx) => (
             <Line
               key={idx}
@@ -183,7 +175,6 @@ export default function PlayEditor() {
             />
           ))}
 
-          {/* Current drawing */}
           {drawingRoute.length > 0 && (
             <Line
               points={drawingRoute}
@@ -197,4 +188,6 @@ export default function PlayEditor() {
       </Stage>
     </div>
   );
-}
+};
+
+export default PlayEditor;
