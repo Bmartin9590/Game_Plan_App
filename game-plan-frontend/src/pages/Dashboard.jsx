@@ -1,84 +1,69 @@
 // src/pages/Dashboard.jsx
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getPlays, sharePlayToTeam, sharePlayToPositionGroup, sharePlayToSideOfBall } from "../services/playService";
-import { AuthContext } from "../context/AuthContext";
-import ShareModal from "../components/ShareModal";
+import axios from "axios";
 
-const Dashboard = () => {
+/**
+ * Dashboard:
+ * Displays all plays from backend.
+ * Clicking a play navigates to PlayEditor for that play.
+ */
+export default function Dashboard() {
   const [plays, setPlays] = useState([]);
-  const [canEdit, setCanEdit] = useState(false);
-  const [selectedPlay, setSelectedPlay] = useState(null);
-  const [showShareModal, setShowShareModal] = useState(false);
-  const { user } = useContext(AuthContext);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const token = localStorage.getItem("token");
+  const API_BASE = "http://localhost:5001/api/plays";
 
   useEffect(() => {
-    const load = async () => {
+    const fetchPlays = async () => {
       try {
-        const data = await getPlays();
-        setPlays(data);
+        const res = await axios.get(API_BASE, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setPlays(res.data);
       } catch (err) {
         console.error(err);
+        alert("Failed to load plays. Make sure you are logged in.");
+      } finally {
+        setLoading(false);
       }
     };
-    load();
-  }, []);
+    fetchPlays();
+  }, [token]);
 
-  const handleShare = async (playId) => {
-    // For demo, assume teamId 1. In real app, choose team from UI
-    const teamId = 1;
-    try {
-      if (user.role === "HEAD_COACH") {
-        await sharePlayToTeam(playId, teamId, canEdit);
-        alert("Shared with team");
-      } else if (user.role === "COORDINATOR") {
-        await sharePlayToSideOfBall(playId, teamId, "OFFENSE", canEdit);
-        alert("Shared with side-of-ball");
-      } else if (user.role === "POSITION_COACH") {
-        await sharePlayToPositionGroup(playId, teamId, canEdit);
-        alert("Shared with position group");
-      } else {
-        alert("You do not have permission to share this play");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Error sharing play");
-    }
-  };
+  if (loading) return <p className="text-white p-8">Loading plays...</p>;
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <div className="flex items-center space-x-4">
-          <div className="text-sm">Role: <span className="font-medium">{user?.role}</span></div>
-        </div>
-      </div>
+    <div className="min-h-screen bg-gray-900 p-8 text-white">
+      <h1 className="text-4xl font-bold mb-6">Dashboard</h1>
 
-      <div className="mb-4">
-        <label className="mr-2">Can Edit:</label>
-        <input type="checkbox" checked={canEdit} onChange={(e) => setCanEdit(e.target.checked)} />
-      </div>
+      {/* New Play button */}
+      <button
+        onClick={() => navigate("/editor")}
+        className="mb-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded"
+      >
+        + Create New Play
+      </button>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {plays.map(play => (
-          <div key={play.id} className="p-4 bg-white/5 rounded cursor-pointer">
-            <div onClick={() => navigate(`/editor/${play.id}`)}>
-              <h3 className="font-bold">{play.name}</h3>
-              <p className="text-sm text-gray-300">Players: {play.players?.length || 0} | Routes: {play.routes?.length || 0}</p>
-            </div>
-            <div className="mt-3 flex justify-between">
-              <button onClick={() => handleShare(play.id)} className="px-3 py-1 bg-green-600 rounded text-white">Share</button>
-              <button onClick={() => { setSelectedPlay(play); setShowShareModal(true); }} className="px-3 py-1 bg-gray-700 rounded text-white">Manage</button>
-            </div>
+      {/* Plays list */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {plays.map((play) => (
+          <div
+            key={play.id}
+            className="p-4 bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-700 transition"
+            onClick={() => navigate(`/editor/${play.id}`)} // Navigate to PlayEditor
+          >
+            <h2 className="text-xl font-semibold">{play.name}</h2>
+            <p className="text-gray-300">
+              Players: {play.players ? play.players.length : 0}
+            </p>
+            <p className="text-gray-400 text-sm">
+              Last updated: {new Date(play.updatedAt).toLocaleDateString()}
+            </p>
           </div>
         ))}
       </div>
-
-      {showShareModal && selectedPlay && <ShareModal play={selectedPlay} onClose={() => setShowShareModal(false)} />}
     </div>
   );
-};
-
-export default Dashboard;
+}

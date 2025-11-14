@@ -1,28 +1,15 @@
 // src/services/authService.js
-import api from "./api";
+import axios from "axios";
 
-export const login = async ({ email, password }) => {
-  const res = await api.post("/api/auth/login", { email, password });
-  localStorage.setItem("token", res.data.token);
-  localStorage.setItem("user", JSON.stringify(res.data.user));
-  return res.data.user;
-};
+const API_BASE = "http://localhost:5001/api/auth";
 
-export const signup = async ({ name, email, password, role, teamId }) => {
-  const res = await api.post("/api/auth/signup", { name, email, password, role, teamId });
-  localStorage.setItem("token", res.data.token);
-  localStorage.setItem("user", JSON.stringify(res.data.user));
-  return res.data.user;
-};
+export const login = (email, password) =>
+  axios.post(`${API_BASE}/login`, { email, password });
 
-export const getCurrentUser = async () => {
-  const token = localStorage.getItem("token");
-  if (!token) return null;
-  const res = await api.get("/api/auth/me");
-  return res.data;
-};
+export const register = (name, email, password) =>
+  axios.post(`${API_BASE}/signup`, { name, email, password });
 
-export const logout = () => {
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
-};
+export const getCurrentUser = (token) =>
+  axios.get(`${API_BASE}/me`, { headers: { Authorization: `Bearer ${token}` } });
+
+export const logout = () => localStorage.removeItem("token");
