@@ -1,145 +1,141 @@
 // src/pages/PlayEditor.jsx
-import React, { useState, useRef } from "react";
+import React, { useRef, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { Stage, Layer, Circle, Line } from "react-konva";
+import { usePlayContext } from "../context/PlayContext";
+import "../index.css";
 
-const OFFENSIVE_POSITIONS = [
-  "QB", "RB", "WR1", "WR2", "WR3", "TE", 
-  "LT", "LG", "C", "RG", "RT"
-];
+export default function PlayEditorPage() {
+  const { id: playId } = useParams(); // may be undefined for /play-editor
+  const navigate = useNavigate();
+  const { plays, updatePlay } = usePlayContext();
 
-const DEFENSIVE_POSITIONS = [
-  "CB1", "CB2", "SS", "FS",
-  "LB1", "LB2", "LB3",
-  "DE1", "DT", "DE2"
-];
+  const existingPlay = playId
+    ? plays.find((p) => p.id === parseInt(playId))
+    : null;
 
-export default function PlayEditor() {
-  // -----------------------------
-  // Hooks MUST be at the top level
-  // -----------------------------
-  const [players, setPlayers] = useState([]);
-  const [selectedFormation, setSelectedFormation] = useState("offense");
-  const [selectedPlayer, setSelectedPlayer] = useState(null);
-  const canvasRef = useRef(null);
+  // If no playId, this is a NEW play
+  const isNew = !playId;
 
-  // -----------------------------
-  // Add players based on formation
-  // -----------------------------
-  const handleFormationChange = (type) => {
-    setSelectedFormation(type);
+  const [drawingLines, setDrawingLines] = useState(existingPlay?.lines || []);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [playerPositions, setPlayerPositions] = useState(
+    existingPlay?.players || [
+      { id: 1, x: 100, y: 100, color: "red" },
+      { id: 2, x: 200, y: 100, color: "blue" },
+    ]
+  );
 
-    const newPlayers =
-      type === "offense"
-        ? OFFENSIVE_POSITIONS.map((pos, idx) => ({
-            id: pos + idx,
-            label: pos,
-            x: 100 + (idx % 5) * 80,
-            y: 100 + Math.floor(idx / 5) * 80,
-          }))
-        : DEFENSIVE_POSITIONS.map((pos, idx) => ({
-            id: pos + idx,
-            label: pos,
-            x: 100 + (idx % 5) * 80,
-            y: 300 + Math.floor(idx / 5) * 80,
-          }));
+  const stageRef = useRef(null);
 
-    setPlayers(newPlayers);
-    setSelectedPlayer(null);
+  const handleMouseDown = (e) => {
+    setIsDrawing(true);
+    const pos = e.target.getStage().getPointerPosition();
+    setDrawingLines((prev) => [...prev, { points: [pos.x, pos.y] }]);
   };
 
-  // -----------------------------
-  // Drag player movement
-  // -----------------------------
-  const onMouseDown = (e, player) => {
-    setSelectedPlayer(player.id);
+  const handleMouseMove = (e) => {
+    if (!isDrawing) return;
+    const stage = e.target.getStage();
+    const point = stage.getPointerPosition();
+
+    setDrawingLines((prev) => {
+      const lastLine = prev[prev.length - 1];
+      const updatedLine = {
+        ...lastLine,
+        points: [...lastLine.points, point.x, point.y],
+      };
+      return [...prev.slice(0, -1), updatedLine];
+    });
   };
 
-  const onMouseMove = (e) => {
-    if (!selectedPlayer) return;
+  const handleMouseUp = () => setIsDrawing(false);
 
-    const canvasRect = canvasRef.current.getBoundingClientRect();
-    const newX = e.clientX - canvasRect.left - 20;
-    const newY = e.clientY - canvasRect.top - 20;
-
-    setPlayers((prev) =>
-      prev.map((p) =>
-        p.id === selectedPlayer ? { ...p, x: newX, y: newY } : p
-      )
+  const handlePlayerDragEnd = (e, playerId) => {
+    const { x, y } = e.target.position();
+    setPlayerPositions((prev) =>
+      prev.map((p) => (p.id === playerId ? { ...p, x, y } : p))
     );
   };
 
-  const onMouseUp = () => {
-    setSelectedPlayer(null);
-  };
+  const clearDrawingLines = () => setDrawingLines([]);
 
-  // -----------------------------
-  // Save Play (stub for now)
-  // -----------------------------
   const savePlay = () => {
-    console.log("Saved play:", players);
-    alert("Play saved!");
+    if (isNew) {
+      // For now, just log — integration with backend/creation can be added later
+      console.log("Saving new play with:", { playerPositions, drawingLines });
+      alert("New play saved (stub). Hook this up to backend later.");
+    } else {
+      updatePlay(existingPlay.id, {
+        ...existingPlay,
+        players: playerPositions,
+        lines: drawingLines,
+      });
+      alert("Play updated!");
+    }
   };
 
-  // -----------------------------
-  // UI
-  // -----------------------------
+  const title = isNew ? "New Play" : existingPlay?.name || "Play Editor";
+
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Play Editor</h1>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-[#020617] via-[#0a1a2f] to-black text-white p-4">
+      <div className="glass-card p-4 w-full max-w-4xl">
+        <h2 className="text-3xl font-bold mb-4 text-center">{title}</h2>
 
-      {/* Formation Buttons */}
-      <div className="mb-4">
-        <button
-          className={`px-4 py-2 mr-2 rounded ${
-            selectedFormation === "offense"
-              ? "bg-blue-600 text-white"
-              : "bg-gray-200"
-          }`}
-          onClick={() => handleFormationChange("offense")}
+        <Stage
+          width={800}
+          height={600}
+          ref={stageRef}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          className="border-2 border-white rounded-lg bg-green-900"
         >
-          Offense
-        </button>
+          <Layer>
+            {/* Drawn lines */}
+            {drawingLines.map((line, i) => (
+              <Line
+                key={i}
+                points={line.points}
+                stroke="white"
+                strokeWidth={3}
+                lineCap="round"
+                lineJoin="round"
+              />
+            ))}
 
-        <button
-          className={`px-4 py-2 rounded ${
-            selectedFormation === "defense"
-              ? "bg-blue-600 text-white"
-              : "bg-gray-200"
-          }`}
-          onClick={() => handleFormationChange("defense")}
-        >
-          Defense
-        </button>
-      </div>
+            {/* Players */}
+            {playerPositions.map((player) => (
+              <Circle
+                key={player.id}
+                x={player.x}
+                y={player.y}
+                radius={20}
+                fill={player.color}
+                draggable
+                onDragEnd={(e) => handlePlayerDragEnd(e, player.id)}
+              />
+            ))}
+          </Layer>
+        </Stage>
 
-      {/* Canvas */}
-      <div
-        ref={canvasRef}
-        className="relative w-full h-[500px] border bg-green-200"
-        onMouseMove={onMouseMove}
-        onMouseUp={onMouseUp}
-      >
-        {players.map((player) => (
-          <div
-            key={player.id}
-            onMouseDown={(e) => onMouseDown(e, player)}
-            className="absolute w-10 h-10 bg-white border rounded-full flex items-center justify-center cursor-pointer select-none"
-            style={{
-              left: player.x,
-              top: player.y,
-            }}
+        <div className="mt-4 flex justify-center gap-4">
+          <button onClick={clearDrawingLines} className="glass-btn px-4 py-2">
+            Clear Drawings
+          </button>
+
+          <button onClick={savePlay} className="glass-btn px-4 py-2">
+            Save Play
+          </button>
+
+          <button
+            onClick={() => navigate("/dashboard")}
+            className="glass-btn px-4 py-2"
           >
-            {player.label}
-          </div>
-        ))}
+            Back
+          </button>
+        </div>
       </div>
-
-      {/* Save button */}
-      <button
-        className="mt-4 px-6 py-2 bg-green-600 text-white rounded"
-        onClick={savePlay}
-      >
-        Save Play
-      </button>
     </div>
   );
 }

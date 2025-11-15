@@ -7,7 +7,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Load user from localStorage on refresh
+  // Load from localStorage
   useEffect(() => {
     const token = localStorage.getItem("token");
     const savedUser = localStorage.getItem("user");
@@ -15,20 +15,19 @@ export const AuthProvider = ({ children }) => {
     if (token && savedUser) {
       setUser(JSON.parse(savedUser));
     }
-
     setLoading(false);
   }, []);
 
   const login = (userData, token) => {
-    setUser(userData);
     localStorage.setItem("user", JSON.stringify(userData));
     localStorage.setItem("token", token);
+    setUser(userData);
   };
 
   const logout = () => {
-    setUser(null);
     localStorage.removeItem("user");
     localStorage.removeItem("token");
+    setUser(null);
   };
 
   return (
@@ -38,7 +37,5 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// ✅ ADD THIS — This is what your app was missing
-export const useAuth = () => {
-  return useContext(AuthContext);
-};
+// Hook export
+export const useAuth = () => useContext(AuthContext);

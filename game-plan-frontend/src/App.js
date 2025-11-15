@@ -1,36 +1,88 @@
 // src/App.js
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 
-import Navbar from "./components/Navbar";
+import IntroPage from "./pages/IntroPage";
 import AuthPage from "./pages/AuthPage";
 import Dashboard from "./pages/Dashboard";
-import PlayEditor from "./pages/PlayEditor";
+import PlayEditorPage from "./pages/PlayEditor";
 
-import { AuthProvider } from "./context/AuthContext";
+import NavigationTabs from "./components/NavigationTabs";
+import { useAuth } from "./context/AuthContext";
 
-const App = () => {
+function ProtectedRoute({ children }) {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-black text-white">
+        Checking session...
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  return children;
+}
+
+export default function App() {
+  const { user } = useAuth();
+
   return (
-    <AuthProvider>
-      <Router>
-        <Navbar />
+    <Router>
+      {/* Top nav (only when logged in) */}
+      {user && <NavigationTabs />}
 
+      {/* Offset for fixed nav */}
+      <div className={user ? "pt-16" : ""}>
         <Routes>
-          {/* Login Page */}
-          <Route path="/auth" element={<AuthPage />} />
+          {/* Intro */}
+          <Route path="/" element={<IntroPage />} />
 
-          {/* Dashboard */}
-          <Route path="/" element={<Dashboard />} />
+          {/* Auth */}
+          <Route
+            path="/auth"
+            element={user ? <Navigate to="/dashboard" replace /> : <AuthPage />}
+          />
 
-          {/* Play Editor */}
-          <Route path="/play-editor" element={<PlayEditor />} />
+          {/* Dashboard (protected) */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
 
-          {/* Optional: Fallback */}
-          <Route path="*" element={<Dashboard />} />
+          {/* Play Editor (protected) */}
+          <Route
+            path="/play-editor"
+            element=
+              {
+                <ProtectedRoute>
+                  <PlayEditorPage />
+                </ProtectedRoute>
+              }
+          />
+
+          {/* Fallback */}
+          <Route
+            path="*"
+            element={
+              <Navigate to={user ? "/dashboard" : "/auth"} replace />
+            }
+          />
         </Routes>
-      </Router>
-    </AuthProvider>
+      </div>
+    </Router>
   );
-};
-
-export default App;
+}

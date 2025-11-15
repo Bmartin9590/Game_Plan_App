@@ -1,17 +1,19 @@
 // src/pages/AuthPage.jsx
 import React, { useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 export default function AuthPage() {
+  const navigate = useNavigate();
+  const { login } = useAuth();
+
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const { login } = useAuth(); // ✅ useAuth hook from context
 
   const API_BASE = "http://localhost:5001/api/auth";
 
@@ -21,24 +23,35 @@ export default function AuthPage() {
     e.preventDefault();
     setError("");
 
-    if (!validateEmail(email)) return setError("Invalid email.");
-    if (password.length < 6) return setError("Password too short.");
+    if (!validateEmail(email)) {
+      return setError("Please enter a valid email address.");
+    }
+    if (password.length < 6) {
+      return setError("Password must be at least 6 characters.");
+    }
 
     try {
       setLoading(true);
 
       if (isLogin) {
-        // 🔐 Login
+        // 🔐 LOGIN
         const res = await axios.post(`${API_BASE}/login`, { email, password });
-        login(res.data.token, res.data.user); // ✅ use context login
+        const { token, user } = res.data;
+
+        // Save in context + localStorage
+        login(user, token);
+
+        // Navigate to dashboard
+        navigate("/dashboard");
       } else {
-        // 🧾 Signup
+        // 🧾 SIGNUP
         await axios.post(`${API_BASE}/signup`, { name, email, password });
         alert("✅ Signup successful! You can now log in.");
         setIsLogin(true);
       }
     } catch (err) {
-      setError(err.response?.data?.message || "Something went wrong.");
+      const msg = err.response?.data?.message || "Something went wrong.";
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -57,6 +70,7 @@ export default function AuthPage() {
               <label className="block text-sm mb-1">Full Name</label>
               <input
                 type="text"
+                autoComplete="off"
                 className="w-full p-3 rounded-lg bg-white/20 border border-white/30 placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 placeholder="Coach Brandon"
                 value={name}
@@ -70,6 +84,7 @@ export default function AuthPage() {
             <label className="block text-sm mb-1">Email</label>
             <input
               type="email"
+              autoComplete="off"
               className="w-full p-3 rounded-lg bg-white/20 border border-white/30 placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-400"
               placeholder="you@example.com"
               value={email}
@@ -82,6 +97,7 @@ export default function AuthPage() {
             <label className="block text-sm mb-1">Password</label>
             <input
               type="password"
+              autoComplete="new-password"
               className="w-full p-3 rounded-lg bg-white/20 border border-white/30 placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-400"
               placeholder="••••••••"
               value={password}
