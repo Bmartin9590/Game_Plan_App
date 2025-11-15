@@ -1,0 +1,68 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 🧩 Relations
+  teamMembers TeamMember[]
+  plays       Play[]
+  sharedPlays SharedPlay[] @relation("UserSharedPlays")
+}
+
+model Team {
+  id        Int      @id @default(autoincrement())
+  name      String
+  createdAt DateTime @default(now())
+
+  members TeamMember[]
+  plays   Play[]
+}
+
+model TeamMember {
+  id         Int     @id @default(autoincrement())
+  role       String // e.g., "HEAD_COACH", "ASSISTANT"
+  sideOfBall String?
+  userId     Int
+  teamId     Int
+  user       User    @relation(fields: [userId], references: [id])
+  team       Team    @relation(fields: [teamId], references: [id])
+}
+
+model Play {
+  id          Int      @id @default(autoincrement())
+  name        String
+  players     Json
+  routes      Json
+  teamId      Int?
+  createdById Int?
+  createdAt   DateTime @default(now())
+
+  team        Team?        @relation(fields: [teamId], references: [id])
+  createdBy   User?        @relation(fields: [createdById], references: [id])
+  sharedPlays SharedPlay[]
+}
+
+model SharedPlay {
+  id           Int      @id @default(autoincrement())
+  playId       Int
+  sharedWithId Int
+  canEdit      Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  play       Play @relation(fields: [playId], references: [id])
+  sharedWith User @relation("UserSharedPlays", fields: [sharedWithId], references: [id])
+}
