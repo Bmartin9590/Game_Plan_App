@@ -1,10 +1,8 @@
 // src/pages/AuthPage.jsx
-import React, { useState, useContext } from "react";
+import React, { useState } from "react";
 import axios from "axios";
-import { AuthContext } from "../context/AuthContext";
 
 export default function AuthPage() {
-  const { login } = useContext(AuthContext);
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -20,24 +18,21 @@ export default function AuthPage() {
     e.preventDefault();
     setError("");
 
-    if (!validateEmail(email)) return setError("Invalid email format.");
-    if (password.length < 6)
-      return setError("Password must be at least 6 characters.");
+    if (!validateEmail(email)) return setError("Invalid email.");
+    if (password.length < 6) return setError("Password too short.");
 
     try {
       setLoading(true);
-
       if (isLogin) {
         const res = await axios.post(`${API_BASE}/login`, { email, password });
-        login(res.data.user, res.data.token);
-        window.location.href = "/dashboard";
+        localStorage.setItem("token", res.data.token);
+        window.location.href = "/dashboard"; // redirect
       } else {
         await axios.post(`${API_BASE}/signup`, { name, email, password });
-        alert("Signup successful! Please log in.");
+        alert("✅ Signup successful! You can now log in.");
         setIsLogin(true);
       }
     } catch (err) {
-      console.error(err);
       setError(err.response?.data?.message || "Something went wrong.");
     } finally {
       setLoading(false);
@@ -45,8 +40,8 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      <div className="backdrop-blur-lg bg-white/10 border border-white/20 rounded-3xl shadow-xl p-10 w-full max-w-md text-white">
+    <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/60 backdrop-blur-sm">
+      <div className="glass-card p-10 rounded-3xl shadow-2xl backdrop-blur-lg bg-[#0a1a2f]/60 border border-white/20 w-full max-w-md transform transition-transform duration-500 ease-in-out scale-95 hover:scale-100">
         <h2 className="text-3xl font-bold text-center mb-6">
           {isLogin ? "Welcome Back" : "Create Account"}
         </h2>
@@ -57,7 +52,7 @@ export default function AuthPage() {
               <label className="block text-sm mb-1">Full Name</label>
               <input
                 type="text"
-                className="w-full p-3 rounded-lg bg-white/20 border border-white/30"
+                className="w-full p-3 rounded-lg bg-white/20 border border-white/30 placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 placeholder="Coach Brandon"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -70,7 +65,7 @@ export default function AuthPage() {
             <label className="block text-sm mb-1">Email</label>
             <input
               type="email"
-              className="w-full p-3 rounded-lg bg-white/20 border border-white/30"
+              className="w-full p-3 rounded-lg bg-white/20 border border-white/30 placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-400"
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -82,7 +77,7 @@ export default function AuthPage() {
             <label className="block text-sm mb-1">Password</label>
             <input
               type="password"
-              className="w-full p-3 rounded-lg bg-white/20 border border-white/30"
+              className="w-full p-3 rounded-lg bg-white/20 border border-white/30 placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-400"
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -90,22 +85,20 @@ export default function AuthPage() {
             />
           </div>
 
-          {error && (
-            <p className="text-red-400 text-sm text-center">{error}</p>
-          )}
+          {error && <p className="text-red-400 text-sm text-center">{error}</p>}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-lg bg-blue-600 hover:bg-blue-700 transition-all duration-300 font-semibold disabled:opacity-50"
+            className="w-full py-3 rounded-lg bg-blue-600 hover:bg-blue-700 transition-all duration-300 font-semibold shadow-lg shadow-blue-500/20 disabled:opacity-50 transform hover:scale-105"
           >
             {loading ? "Please wait..." : isLogin ? "Login" : "Sign Up"}
           </button>
         </form>
 
-        <div className="text-center mt-6 text-gray-300">
+        <div className="text-center mt-6">
           {isLogin ? (
-            <p>
+            <p className="text-sm text-gray-300">
               Don’t have an account?{" "}
               <button
                 type="button"
@@ -116,7 +109,7 @@ export default function AuthPage() {
               </button>
             </p>
           ) : (
-            <p>
+            <p className="text-sm text-gray-300">
               Already have an account?{" "}
               <button
                 type="button"

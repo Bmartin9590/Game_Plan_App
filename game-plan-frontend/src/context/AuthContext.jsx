@@ -1,57 +1,52 @@
+// src/context/AuthContext.jsx
 import React, { createContext, useState, useEffect } from "react";
-import { login as apiLogin, register as apiRegister, getCurrentUser } from "../services/authService";
+import axios from "axios";
 
-// Create the authentication context
 export const AuthContext = createContext();
 
-// Provider that wraps the app
 export const AuthProvider = ({ children }) => {
-  // Store the logged-in user in state
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Load the current user on first page load
+  const API_BASE = "http://localhost:5001/api/auth";
+
+  // Check if token exists and fetch user info
+  const loadUser = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const res = await axios.get(`${API_BASE}/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setUser(res.data.user);
+    } catch (err) {
+      console.error(err);
+      localStorage.removeItem("token");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const currentUser = await getCurrentUser();
-        setUser(currentUser);
-      } catch (err) {
-        console.log("No user logged in.");
-      }
-    };
-
     loadUser();
   }, []);
 
-  // Handle login
-  const login = async (email, password) => {
-    const userData = await apiLogin(email, password);
+  const login = (token, userData) => {
+    localStorage.setItem("token", token);
     setUser(userData);
-    return userData;
   };
 
-  // Handle signup
-  const register = async (name, email, password) => {
-    const userData = await apiRegister(name, email, password);
-    setUser(userData);
-    return userData;
-  };
-
-  // Handle logout (clear token and user)
   const logout = () => {
     localStorage.removeItem("token");
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        login,
-        register,
-        logout
-      }}
-    >
+    <AuthContext.Provider value={{ user, login, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );
