@@ -1,36 +1,45 @@
-import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+// src/App.js
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import IntroPage from "./pages/IntroPage";
+import AuthPage from "./pages/AuthPage";
+import Dashboard from "./pages/Dashboard";
+import PlayEditor from "./pages/PlayEditor";
 
-// Auth context provider
-import { AuthProvider } from "./context/AuthContext";
-
-// Pages
-import AuthPage from "./pages/AuthPage";       // Combined Login + Signup page
-import Dashboard from "./pages/Dashboard";     // Main dashboard (protected route)
-
-// Components
-import ProtectedRoute from "./components/ProtectedRoute"; // Protect dashboard route
+/**
+ * PrivateRoute:
+ * Redirects unauthenticated users to /auth
+ */
+const PrivateRoute = ({ children }) => {
+  const token = localStorage.getItem("token");
+  return token ? children : <Navigate to="/auth" />;
+};
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          {/* Public route: Login / Signup */}
-          <Route path="/" element={<AuthPage />} />
-
-          {/* Protected route: Must be logged in */}
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-      </Router>
-    </AuthProvider>
+    <Router>
+      <Routes>
+        <Route path="/" element={<IntroPage />} />
+        <Route path="/auth" element={<AuthPage />} />
+        <Route
+          path="/dashboard"
+          element={
+            <PrivateRoute>
+              <Dashboard />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/editor/:id"
+          element={
+            <PrivateRoute>
+              <PlayEditor />
+            </PrivateRoute>
+          }
+        />
+        {/* Redirect unknown routes to intro */}
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+    </Router>
   );
 }
 
