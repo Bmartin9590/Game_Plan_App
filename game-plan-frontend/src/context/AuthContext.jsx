@@ -1,53 +1,46 @@
-// src/context/AuthContext.jsx
-import React, { createContext, useState, useEffect } from "react";
-import axios from "axios";
+import React, { createContext, useContext, useState, useEffect } from "react";
 
 export const AuthContext = createContext();
 
-export const AuthProvider = ({ children }) => {
+export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [token, setToken] = useState(null);
 
-  const API_BASE = "http://localhost:5001/api/auth";
-
-  // Check if token exists and fetch user info
-  const loadUser = async () => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const res = await axios.get(`${API_BASE}/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setUser(res.data.user);
-    } catch (err) {
-      console.error(err);
-      localStorage.removeItem("token");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Load token & user on refresh
   useEffect(() => {
-    loadUser();
+    const storedToken = localStorage.getItem("token");
+    const storedUser = localStorage.getItem("user");
+
+    if (storedToken) setToken(storedToken);
+    if (storedUser) setUser(JSON.parse(storedUser));
   }, []);
 
-  const login = (token, userData) => {
-    localStorage.setItem("token", token);
+  // Save login
+  const login = (jwtToken, userData) => {
+    localStorage.setItem("token", jwtToken);
+    localStorage.setItem("user", JSON.stringify(userData));
+    setToken(jwtToken);
     setUser(userData);
+
+    // Route to dashboard after login
+    window.location.href = "/dashboard";
   };
 
+  // Logout
   const logout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("user");
     setUser(null);
+    setToken(null);
+    window.location.href = "/auth";
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, token, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
-};
+}
+
+// ✅ THE MISSING HOOK (this fixes your error)
+export const useAuth = () => useContext(AuthContext);

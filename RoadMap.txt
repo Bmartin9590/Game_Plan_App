@@ -1,0 +1,220 @@
+🚀 GAMEPLAN APP – FULL FEATURE ROADMAP (v1 → v3)
+
+Below is the complete roadmap broken into phases:
+
+📌 PHASE 1 — Core App Completion (MVP)
+
+Goal: Make the app fully functional, stable, and usable by coaches.
+
+✅ 1. Authentication Flow
+
+Intro Page → Login/Signup → Dashboard
+
+Protect routes
+
+Add JWT/session expiration handling
+
+Add login error messages, loading states
+
+🔜 2. User Dashboard (Coach Home Screen)
+
+Add panels for:
+
+“Create New Play”
+
+“My Playbook”
+
+“Practice Scripts”
+
+“Game Scripts”
+
+“Analytics & Tendencies”
+
+“Team Management”
+
+🔜 3. Play Creator (Canvas v1) — Priority
+
+This is the BIG ONE.
+
+Drag-and-drop players
+
+Select formation
+
+Ability to draw routes (mouse + Apple Pencil)
+
+Save play to backend
+
+Load + edit saved play
+
+Features included:
+
+Snap-to-grid positioning
+
+Delete player
+
+Change jersey number, route color
+
+Undo/redo
+
+Zoom/pan canvas
+
+📌 PHASE 2 — Team + Playbook Automation
+
+Once the play creator works, we expand.
+
+🔜 4. Formation Generator (AI + Templates)
+
+Coach types:
+
+“Give me Trips Right with motion into Bunch.”
+
+App generates:
+
+The formation
+
+All player positions
+
+Movable buttons pre-loaded on canvas
+
+🔜 5. Practice Script Builder
+
+Add plays to practice periods
+
+Export to PDF
+
+Add notes for each play
+
+Auto-number plays (1–N)
+
+“Install Tracker” so coaches can mark concepts as installed
+
+🔜 6. Game Call Script Builder
+
+Create a 1st/10, 2nd/medium, 3rd short list
+
+Red Zone play sheet
+
+2-point plays
+
+Trick plays
+
+Wristband printouts
+
+🔜 7. Team Management
+
+Manage roster
+
+Add jersey numbers
+
+Assign personnel packages (10, 11, 12, 20, 21, etc.)
+
+Auto-swap players in formations based on personnel group
+
+📌 PHASE 3 — Advanced AI + Analytics (Your most powerful differentiators)
+🔥 8. AI Play Generator
+
+Coach types:
+
+“Create a Cover 3 beater from 11 personnel with PA rollout.”
+
+AI generates:
+
+Formation
+
+Play concept
+
+Routes
+
+Blocking scheme
+
+Canvas auto-populates with the play.
+
+🔥 9. Opponent Analysis Engine
+
+Coaches upload:
+
+Hudl tendency reports
+
+CSV export of defensive coverages
+
+Manual stats
+
+AI generates:
+
+“On 3rd/6 they’re 82% man free.”
+
+“They blitz to the TE side 62% of the time.”
+
+“Run RPO glance vs this team.”
+
+🔥 10. AI GamePlan Builder
+
+Coach inputs:
+
+Opponent name
+
+Their scheme
+
+Their strengths
+
+Your roster strengths
+
+AI outputs:
+
+Recommended formations
+
+Install priorities
+
+Top 10 plays to call
+
+Top 5 shot plays
+
+Top 5 RPOs
+
+Red zone plan
+
+2-minute plan
+
+Answer plays for blitz tendencies
+
+🔥 11. Video Tagging + AOI (Advanced)
+
+Future phase, but extremely strong:
+
+Upload mp4
+
+AI tags coverages
+
+AI tags fronts
+
+AI labels players
+
+AI generates call tendencies
+
+📌 RECOMMENDED DEVELOPMENT ORDER
+
+To keep things clean and avoid rewriting:
+
+Step 1 — Finish Authentication + Dashboard
+
+You’re almost done.
+
+Step 2 — Build Canvas v1 (Play Creator)
+
+This is the foundation of everything.
+
+Step 3 — Add Formation Generator + Player Movement
+
+Once the canvas works, all AI play creation can be layered on top.
+
+Step 4 — Build Practice Scripts
+
+Simpler than Game Scripts and will test database structure.
+
+Step 5 — Build Game Scripts
+
+More complex and deeper UI.
+
+Step 6 — Add AI Features
+
+Only after the UI + DB are solid.

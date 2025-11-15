@@ -1,46 +1,36 @@
 // src/App.js
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import IntroPage from "./pages/IntroPage";
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+
+import Navbar from "./components/Navbar";
 import AuthPage from "./pages/AuthPage";
 import Dashboard from "./pages/Dashboard";
 import PlayEditor from "./pages/PlayEditor";
 
-/**
- * PrivateRoute:
- * Redirects unauthenticated users to /auth
- */
-const PrivateRoute = ({ children }) => {
-  const token = localStorage.getItem("token");
-  return token ? children : <Navigate to="/auth" />;
-};
+import { AuthProvider } from "./context/AuthContext";
 
-function App() {
+const App = () => {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<IntroPage />} />
-        <Route path="/auth" element={<AuthPage />} />
-        <Route
-          path="/dashboard"
-          element={
-            <PrivateRoute>
-              <Dashboard />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/editor/:id"
-          element={
-            <PrivateRoute>
-              <PlayEditor />
-            </PrivateRoute>
-          }
-        />
-        {/* Redirect unknown routes to intro */}
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Navbar />
+
+        <Routes>
+          {/* Login Page */}
+          <Route path="/auth" element={<AuthPage />} />
+
+          {/* Dashboard */}
+          <Route path="/" element={<Dashboard />} />
+
+          {/* Play Editor */}
+          <Route path="/play-editor" element={<PlayEditor />} />
+
+          {/* Optional: Fallback */}
+          <Route path="*" element={<Dashboard />} />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
-}
+};
 
 export default App;
