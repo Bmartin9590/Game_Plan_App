@@ -1,6 +1,7 @@
 // src/pages/AuthPage.jsx
 import React, { useState } from "react";
 import axios from "axios";
+import { useAuth } from "../context/AuthContext";
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -9,6 +10,8 @@ export default function AuthPage() {
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const { login } = useAuth(); // ✅ useAuth hook from context
 
   const API_BASE = "http://localhost:5001/api/auth";
 
@@ -23,11 +26,13 @@ export default function AuthPage() {
 
     try {
       setLoading(true);
+
       if (isLogin) {
+        // 🔐 Login
         const res = await axios.post(`${API_BASE}/login`, { email, password });
-        localStorage.setItem("token", res.data.token);
-        window.location.href = "/dashboard"; // redirect
+        login(res.data.token, res.data.user); // ✅ use context login
       } else {
+        // 🧾 Signup
         await axios.post(`${API_BASE}/signup`, { name, email, password });
         alert("✅ Signup successful! You can now log in.");
         setIsLogin(true);

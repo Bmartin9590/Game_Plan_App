@@ -1,40 +1,145 @@
-import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import { getPlayById, savePlay, updatePlay } from "../services/playService";
+// src/pages/PlayEditor.jsx
+import React, { useState, useRef } from "react";
 
-/**
- * PlayEditor: edit a single play
- */
+const OFFENSIVE_POSITIONS = [
+  "QB", "RB", "WR1", "WR2", "WR3", "TE", 
+  "LT", "LG", "C", "RG", "RT"
+];
+
+const DEFENSIVE_POSITIONS = [
+  "CB1", "CB2", "SS", "FS",
+  "LB1", "LB2", "LB3",
+  "DE1", "DT", "DE2"
+];
+
 export default function PlayEditor() {
-  const { id } = useParams();
-  const [play, setPlay] = useState(null);
+  // -----------------------------
+  // Hooks MUST be at the top level
+  // -----------------------------
+  const [players, setPlayers] = useState([]);
+  const [selectedFormation, setSelectedFormation] = useState("offense");
+  const [selectedPlayer, setSelectedPlayer] = useState(null);
+  const canvasRef = useRef(null);
 
-  useEffect(() => {
-    async function fetchPlay() {
-      const data = await getPlayById(id);
-      setPlay(data);
-    }
-    fetchPlay();
-  }, [id]);
+  // -----------------------------
+  // Add players based on formation
+  // -----------------------------
+  const handleFormationChange = (type) => {
+    setSelectedFormation(type);
 
-  if (!play) return <p className="text-center mt-10 text-white">Loading...</p>;
+    const newPlayers =
+      type === "offense"
+        ? OFFENSIVE_POSITIONS.map((pos, idx) => ({
+            id: pos + idx,
+            label: pos,
+            x: 100 + (idx % 5) * 80,
+            y: 100 + Math.floor(idx / 5) * 80,
+          }))
+        : DEFENSIVE_POSITIONS.map((pos, idx) => ({
+            id: pos + idx,
+            label: pos,
+            x: 100 + (idx % 5) * 80,
+            y: 300 + Math.floor(idx / 5) * 80,
+          }));
 
+    setPlayers(newPlayers);
+    setSelectedPlayer(null);
+  };
+
+  // -----------------------------
+  // Drag player movement
+  // -----------------------------
+  const onMouseDown = (e, player) => {
+    setSelectedPlayer(player.id);
+  };
+
+  const onMouseMove = (e) => {
+    if (!selectedPlayer) return;
+
+    const canvasRect = canvasRef.current.getBoundingClientRect();
+    const newX = e.clientX - canvasRect.left - 20;
+    const newY = e.clientY - canvasRect.top - 20;
+
+    setPlayers((prev) =>
+      prev.map((p) =>
+        p.id === selectedPlayer ? { ...p, x: newX, y: newY } : p
+      )
+    );
+  };
+
+  const onMouseUp = () => {
+    setSelectedPlayer(null);
+  };
+
+  // -----------------------------
+  // Save Play (stub for now)
+  // -----------------------------
+  const savePlay = () => {
+    console.log("Saved play:", players);
+    alert("Play saved!");
+  };
+
+  // -----------------------------
+  // UI
+  // -----------------------------
   return (
-    <div className="min-h-screen p-6 bg-gradient-to-br from-[#020617] via-[#0a1a2f] to-black">
-      <h1 className="text-3xl font-bold text-white mb-4">{play.name}</h1>
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-4">Play Editor</h1>
 
-      <div className="play-field glass-modal mb-4">
-        <p className="text-gray-300">Edit your play here...</p>
+      {/* Formation Buttons */}
+      <div className="mb-4">
+        <button
+          className={`px-4 py-2 mr-2 rounded ${
+            selectedFormation === "offense"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200"
+          }`}
+          onClick={() => handleFormationChange("offense")}
+        >
+          Offense
+        </button>
+
+        <button
+          className={`px-4 py-2 rounded ${
+            selectedFormation === "defense"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-200"
+          }`}
+          onClick={() => handleFormationChange("defense")}
+        >
+          Defense
+        </button>
       </div>
 
-      <div className="flex gap-3">
-        <button onClick={() => savePlay(play)} className="glass-btn">
-          Save
-        </button>
-        <button onClick={() => updatePlay(play)} className="glass-btn">
-          Update
-        </button>
+      {/* Canvas */}
+      <div
+        ref={canvasRef}
+        className="relative w-full h-[500px] border bg-green-200"
+        onMouseMove={onMouseMove}
+        onMouseUp={onMouseUp}
+      >
+        {players.map((player) => (
+          <div
+            key={player.id}
+            onMouseDown={(e) => onMouseDown(e, player)}
+            className="absolute w-10 h-10 bg-white border rounded-full flex items-center justify-center cursor-pointer select-none"
+            style={{
+              left: player.x,
+              top: player.y,
+            }}
+          >
+            {player.label}
+          </div>
+        ))}
       </div>
+
+      {/* Save button */}
+      <button
+        className="mt-4 px-6 py-2 bg-green-600 text-white rounded"
+        onClick={savePlay}
+      >
+        Save Play
+      </button>
     </div>
   );
 }
